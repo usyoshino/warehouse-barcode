@@ -1,85 +1,167 @@
-```html
+```html id="q8l4s0"
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1">
 
 <title>バーコード読み取り</title>
 
+
 <style>
+
 body {
+
   margin: 0;
+
   background: #000;
+
   color: #fff;
+
   font-family: sans-serif;
+
   text-align: center;
+
 }
+
 
 h2 {
+
   margin: 15px 0;
+
 }
+
 
 #video {
+
   width: 100%;
+
   height: auto;
+
   max-height: 70vh;
+
   object-fit: cover;
+
 }
+
 
 #message {
+
   padding: 15px;
+
   font-size: 20px;
+
 }
+
 
 #result {
+
   padding: 15px;
+
   font-size: 24px;
+
   font-weight: bold;
+
   background: #fff;
+
   color: #000;
+
   margin: 10px;
+
   border-radius: 8px;
+
 }
 
+
 button {
+
   width: 90%;
+
   padding: 15px;
+
   margin: 8px;
+
   font-size: 18px;
+
   border-radius: 8px;
+
 }
+
 </style>
+
 </head>
+
 
 <body>
 
+
 <h2>📷 バーコード読み取り</h2>
 
+
 <div id="message">
+
 カメラを起動しています…
+
 </div>
 
-<video id="video" autoplay playsinline></video>
+
+<video id="video"
+       autoplay
+       playsinline>
+</video>
+
 
 <div id="result">
+
 読み取り待機中
+
 </div>
 
+
 <button onclick="startCamera()">
+
 📷 カメラを起動
+
 </button>
 
+
 <button onclick="stopCamera()">
+
 ✕ カメラ停止
+
 </button>
 
 
 <script>
 
+
 var stream = null;
+
 var detector = null;
+
 var scanning = false;
+
+
+/* =========================
+   URLから戻り先を取得
+========================= */
+
+var params =
+  new URLSearchParams(
+    window.location.search
+  );
+
+
+var returnUrl =
+  params.get('returnUrl');
+
+
+var target =
+  params.get('target');
 
 
 /* =========================
@@ -89,85 +171,113 @@ var scanning = false;
 async function startCamera() {
 
   if (scanning) {
+
     return;
+
   }
 
+
   var message =
-    document.getElementById('message');
-
-  var video =
-    document.getElementById('video');
-
-  message.innerText =
-    'カメラを起動しています…';
-
-
-  /* BarcodeDetector確認 */
-
-  if (!('BarcodeDetector' in window)) {
-
-    message.innerText =
-      'このスマホのChromeは標準バーコード読み取りに対応していません。';
-
-    alert(
-      'このスマホでは標準バーコード読み取り機能が利用できません。'
+    document.getElementById(
+      'message'
     );
 
+
+  var video =
+    document.getElementById(
+      'video'
+    );
+
+
+  if (
+    !('BarcodeDetector' in window)
+  ) {
+
+    message.innerText =
+      'このスマホのChromeはバーコード読み取りに対応していません。';
+
     return;
+
   }
 
 
   try {
 
+
     detector =
       new BarcodeDetector({
+
         formats: [
+
           'ean_13',
+
           'ean_8',
+
           'code_128',
+
           'code_39',
+
           'itf'
+
         ]
+
       });
 
 
     stream =
-      await navigator.mediaDevices.getUserMedia({
+      await navigator.mediaDevices
+        .getUserMedia({
 
-        video: {
-          facingMode: {
-            ideal: 'environment'
-          }
-        },
+          video: {
 
-        audio: false
+            facingMode: {
 
-      });
+              ideal: 'environment'
+
+            }
+
+          },
+
+          audio: false
+
+        });
 
 
-    video.srcObject = stream;
+    video.srcObject =
+      stream;
+
 
     await video.play();
 
+
     scanning = true;
+
 
     message.innerText =
       'バーコードをカメラに映してください';
+
 
     scanBarcode();
 
 
   } catch (error) {
 
+
     console.log(error);
+
 
     message.innerText =
       'カメラを起動できませんでした';
 
+
     alert(
+
       'カメラを起動できませんでした。\n\n' +
+
       'エラー：' +
+
       error.name
+
     );
 
   }
@@ -176,35 +286,47 @@ async function startCamera() {
 
 
 /* =========================
-   バーコード検索
+   バーコード読み取り
 ========================= */
 
 async function scanBarcode() {
 
+
   if (!scanning) {
+
     return;
+
   }
 
 
   var video =
-    document.getElementById('video');
+    document.getElementById(
+      'video'
+    );
 
 
   try {
 
+
     var codes =
-      await detector.detect(video);
+      await detector.detect(
+        video
+      );
 
 
-    if (codes.length > 0) {
+    if (
+      codes.length > 0
+    ) {
 
-      var value =
+
+      var barcode =
         codes[0].rawValue;
 
 
       document.getElementById(
         'result'
-      ).innerText = value;
+      ).innerText =
+        barcode;
 
 
       document.getElementById(
@@ -215,9 +337,44 @@ async function scanBarcode() {
 
       stopCamera();
 
+
+      /* =================
+         倉庫管理画面へ戻る
+      ================= */
+
+
+      if (
+        returnUrl
+      ) {
+
+
+        var url =
+          returnUrl +
+
+          '?barcode=' +
+
+          encodeURIComponent(
+            barcode
+          ) +
+
+          '&target=' +
+
+          encodeURIComponent(
+            target || ''
+          );
+
+
+        window.location.href =
+          url;
+
+
+      }
+
+
       return;
 
     }
+
 
   } catch (error) {
 
@@ -240,10 +397,12 @@ async function scanBarcode() {
 
 function stopCamera() {
 
+
   scanning = false;
 
 
   if (stream) {
+
 
     var tracks =
       stream.getTracks();
@@ -255,26 +414,46 @@ function stopCamera() {
       i++
     ) {
 
+
       tracks[i].stop();
+
 
     }
 
 
     stream = null;
 
+
   }
 
 
   var video =
-    document.getElementById('video');
+    document.getElementById(
+      'video'
+    );
 
 
-  video.srcObject = null;
+  video.srcObject =
+    null;
 
 }
+
+
+/* =========================
+   自動起動
+========================= */
+
+window.onload =
+  function() {
+
+    startCamera();
+
+  };
+
 
 </script>
 
 </body>
+
 </html>
 ```
