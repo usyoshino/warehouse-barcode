@@ -1,0 +1,220 @@
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>バーコード読み取り</title>
+
+<script src="https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js"></script>
+
+<style>
+body {
+  margin: 0;
+  background: #000;
+  color: #fff;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+h2 {
+  margin: 15px 0;
+}
+
+#video {
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  object-fit: cover;
+}
+
+#message {
+  padding: 15px;
+  font-size: 20px;
+}
+
+#result {
+  padding: 15px;
+  font-size: 24px;
+  font-weight: bold;
+  background: #fff;
+  color: #000;
+  margin: 10px;
+  border-radius: 8px;
+}
+
+button {
+  width: 90%;
+  padding: 15px;
+  margin: 8px;
+  font-size: 18px;
+  border-radius: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>📷 バーコード読み取り</h2>
+
+<div id="message">
+背面カメラを起動しています…
+</div>
+
+<video id="video" autoplay playsinline></video>
+
+<div id="result">
+読み取り待機中
+</div>
+
+<button onclick="startScanner()">
+📷 読み取り開始
+</button>
+
+<button onclick="stopScanner()">
+✕ カメラ停止
+</button>
+
+
+<script>
+
+var reader = null;
+var scanning = false;
+
+
+/* カメラ開始 */
+
+function startScanner() {
+
+  if (scanning) {
+    return;
+  }
+
+  if (typeof ZXingBrowser === 'undefined') {
+
+    document.getElementById(
+      'message'
+    ).innerText =
+      'バーコード読み取り機能を読み込めません。';
+
+    return;
+  }
+
+
+  var video =
+    document.getElementById('video');
+
+
+  reader =
+    new ZXingBrowser.BrowserMultiFormatReader();
+
+
+  scanning = true;
+
+
+  document.getElementById(
+    'message'
+  ).innerText =
+    'バーコードをカメラに映してください';
+
+
+  reader.decodeFromConstraints(
+    {
+      video: {
+        facingMode: {
+          ideal: 'environment'
+        }
+      },
+      audio: false
+    },
+    video,
+    function(result, error) {
+
+      if (result) {
+
+        var barcode =
+          result.getText();
+
+
+        document.getElementById(
+          'result'
+        ).innerText =
+          barcode;
+
+
+        document.getElementById(
+          'message'
+        ).innerText =
+          '✅ 読み取り成功';
+
+
+        stopScanner();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* カメラ停止 */
+
+function stopScanner() {
+
+  scanning = false;
+
+
+  if (reader) {
+
+    try {
+      reader.reset();
+    } catch (e) {
+      console.log(e);
+    }
+
+    reader = null;
+
+  }
+
+
+  var video =
+    document.getElementById('video');
+
+
+  if (video.srcObject) {
+
+    var tracks =
+      video.srcObject.getTracks();
+
+
+    for (
+      var i = 0;
+      i < tracks.length;
+      i++
+    ) {
+
+      tracks[i].stop();
+
+    }
+
+
+    video.srcObject = null;
+
+  }
+
+}
+
+
+/* ページを開いたら開始 */
+
+window.onload = function() {
+  startScanner();
+};
+
+</script>
+
+</body>
+</html>
+```
