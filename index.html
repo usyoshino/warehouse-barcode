@@ -7,8 +7,6 @@
 
 <title>バーコード読み取り</title>
 
-<script src="https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js"></script>
-
 <style>
 body {
   margin: 0;
@@ -59,7 +57,7 @@ button {
 <h2>📷 バーコード読み取り</h2>
 
 <div id="message">
-背面カメラを起動しています…
+カメラを起動しています…
 </div>
 
 <video id="video" autoplay playsinline></video>
@@ -68,36 +66,122 @@ button {
 読み取り待機中
 </div>
 
-<button onclick="startScanner()">
-📷 読み取り開始
+<button onclick="startCamera()">
+📷 カメラを起動
 </button>
 
-<button onclick="stopScanner()">
+<button onclick="stopCamera()">
 ✕ カメラ停止
 </button>
 
 
 <script>
 
-var reader = null;
+var stream = null;
+var detector = null;
 var scanning = false;
 
 
-/* カメラ開始 */
+/* =========================
+   カメラ開始
+========================= */
 
-function startScanner() {
+async function startCamera() {
 
   if (scanning) {
     return;
   }
 
-  if (typeof ZXingBrowser === 'undefined') {
+  var message =
+    document.getElementById('message');
 
-    document.getElementById(
-      'message'
-    ).innerText =
-      'バーコード読み取り機能を読み込めません。';
+  var video =
+    document.getElementById('video');
 
+  message.innerText =
+    'カメラを起動しています…';
+
+
+  /* BarcodeDetector確認 */
+
+  if (!('BarcodeDetector' in window)) {
+
+    message.innerText =
+      'このスマホのChromeは標準バーコード読み取りに対応していません。';
+
+    alert(
+      'このスマホでは標準バーコード読み取り機能が利用できません。'
+    );
+
+    return;
+  }
+
+
+  try {
+
+    detector =
+      new BarcodeDetector({
+        formats: [
+          'ean_13',
+          'ean_8',
+          'code_128',
+          'code_39',
+          'itf'
+        ]
+      });
+
+
+    stream =
+      await navigator.mediaDevices.getUserMedia({
+
+        video: {
+          facingMode: {
+            ideal: 'environment'
+          }
+        },
+
+        audio: false
+
+      });
+
+
+    video.srcObject = stream;
+
+    await video.play();
+
+    scanning = true;
+
+    message.innerText =
+      'バーコードをカメラに映してください';
+
+    scanBarcode();
+
+
+  } catch (error) {
+
+    console.log(error);
+
+    message.innerText =
+      'カメラを起動できませんでした';
+
+    alert(
+      'カメラを起動できませんでした。\n\n' +
+      'エラー：' +
+      error.name
+    );
+
+  }
+
+}
+
+
+/* =========================
+   バーコード検索
+========================= */
+
+async function scanBarcode() {
+
+  if (!scanning) {
     return;
   }
 
@@ -106,87 +190,63 @@ function startScanner() {
     document.getElementById('video');
 
 
-  reader =
-    new ZXingBrowser.BrowserMultiFormatReader();
+  try {
+
+    var codes =
+      await detector.detect(video);
 
 
-  scanning = true;
+    if (codes.length > 0) {
+
+      var value =
+        codes[0].rawValue;
 
 
-  document.getElementById(
-    'message'
-  ).innerText =
-    'バーコードをカメラに映してください';
+      document.getElementById(
+        'result'
+      ).innerText = value;
 
 
-  reader.decodeFromConstraints(
-    {
-      video: {
-        facingMode: {
-          ideal: 'environment'
-        }
-      },
-      audio: false
-    },
-    video,
-    function(result, error) {
-
-      if (result) {
-
-        var barcode =
-          result.getText();
+      document.getElementById(
+        'message'
+      ).innerText =
+        '✅ 読み取り成功';
 
 
-        document.getElementById(
-          'result'
-        ).innerText =
-          barcode;
+      stopCamera();
 
-
-        document.getElementById(
-          'message'
-        ).innerText =
-          '✅ 読み取り成功';
-
-
-        stopScanner();
-
-      }
+      return;
 
     }
+
+  } catch (error) {
+
+    console.log(error);
+
+  }
+
+
+  setTimeout(
+    scanBarcode,
+    200
   );
 
 }
 
 
-/* カメラ停止 */
+/* =========================
+   カメラ停止
+========================= */
 
-function stopScanner() {
+function stopCamera() {
 
   scanning = false;
 
 
-  if (reader) {
-
-    try {
-      reader.reset();
-    } catch (e) {
-      console.log(e);
-    }
-
-    reader = null;
-
-  }
-
-
-  var video =
-    document.getElementById('video');
-
-
-  if (video.srcObject) {
+  if (stream) {
 
     var tracks =
-      video.srcObject.getTracks();
+      stream.getTracks();
 
 
     for (
@@ -200,18 +260,18 @@ function stopScanner() {
     }
 
 
-    video.srcObject = null;
+    stream = null;
 
   }
 
+
+  var video =
+    document.getElementById('video');
+
+
+  video.srcObject = null;
+
 }
-
-
-/* ページを開いたら開始 */
-
-window.onload = function() {
-  startScanner();
-};
 
 </script>
 
