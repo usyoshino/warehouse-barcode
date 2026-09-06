@@ -285,8 +285,16 @@ async function scanBarcode() {
 
         else {
 
-          window.location.href =
-            url;
+if (window.opener) {
+  window.opener.postMessage({
+    barcode: barcode,
+    target: target
+  }, 'https://script.google.com');
+
+  window.close();
+} else {
+  window.location.href = url;
+}
 
         }
 
