@@ -251,56 +251,43 @@ async function scanBarcode() {
          倉庫管理画面へ戻る
       ========================= */
 
-      if (returnUrl) {
+if (returnUrl) {
 
-        var url =
-          returnUrl +
-          '?barcode=' +
-          encodeURIComponent(barcode) +
-          '&target=' +
-          encodeURIComponent(target || '');
+  var url =
+    returnUrl +
+    '?barcode=' +
+    encodeURIComponent(barcode) +
+    '&target=' +
+    encodeURIComponent(target || '');
 
+  /*
+   * 元のGAS画面が残っている場合
+   * バーコードだけを元の画面へ返す
+   */
 
-        /*
-         * GAS画面から開いた場合
-         * 元の画面へバーコードを送る
-         */
+  if (window.opener && !window.opener.closed) {
 
-        if (window.opener) {
+    window.opener.postMessage(
+      {
+        barcode: barcode,
+        target: target
+      },
+      'https://script.google.com'
+    );
 
-          window.opener.postMessage(
+    window.close();
 
-            {
-              barcode: barcode,
-              target: target
-            },
+  } else {
 
-            '*'
+    /* 元の画面がない場合は従来方式で戻る */
 
-          );
+    window.location.href = url;
 
-          window.close();
+  }
 
-        }
-
-        else {
-
-if (window.opener) {
-  window.opener.postMessage({
-    barcode: barcode,
-    target: target
-  }, 'https://script.google.com');
-
-  window.close();
-} else {
-  window.location.href = url;
 }
 
-        }
-
-      }
-
-      return;
+return;
 
     }
 
