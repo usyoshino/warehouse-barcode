@@ -252,37 +252,79 @@ async function scanBarcode() {
       ========================= */
 
 if (returnUrl) {
-
-  var url =
-    returnUrl +
-    '?barcode=' +
-    encodeURIComponent(barcode) +
-    '&target=' +
-    encodeURIComponent(target || '');
-
-  /*
-   * 元のGAS画面が残っている場合
-   * バーコードだけを元の画面へ返す
-   */
-
+  // GAS側へ読み取り結果を送る
   if (window.opener && !window.opener.closed) {
-
     window.opener.postMessage(
-  {
-    barcode: barcode,
-    target: target
-  },
-  'https://script.google.com'
-);
+      {
+        barcode: barcode,
+        target: target
+      },
+      'https://script.google.com'
+    );
+
+    // 元の画面へ戻る
+    try {
+      window.opener.focus();
+    } catch (e) {}
+
+    // まず自動で閉じる
+    setTimeout(function () {
+      window.close();
+
+      // window.close() が効かないスマホ等では
+      // 「元の画面に戻る」ボタンを表示
+      setTimeout(function () {
+        document.body.innerHTML = `
+          <div style="
+            text-align:center;
+            padding:40px 20px;
+            font-family:sans-serif;
+          ">
+            <h2 style="color:#333;">読み取り成功</h2>
+
+            <p style="font-size:18px;">
+              バーコードを元の画面へ入力しました。
+            </p>
+
+            <button
+              onclick="window.close();"
+              style="
+                width:90%;
+                max-width:350px;
+                padding:18px;
+                font-size:20px;
+                font-weight:bold;
+                border:none;
+                border-radius:10px;
+                background:#1976d2;
+                color:white;
+              "
+            >
+              元の画面に戻る
+            </button>
+
+            <p style="
+              margin-top:20px;
+              color:#777;
+              font-size:14px;
+            ">
+              ボタンを押しても閉じない場合は、<br>
+              ブラウザの「戻る」またはタブを閉じてください。
+            </p>
+          </div>
+        `;
+      }, 500);
+    }, 300);
 
   } else {
-
-    /* 元の画面がない場合は従来方式で戻る */
-
-    window.location.href = url;
-
+    // 元画面が取得できない場合
+    window.location.href =
+      returnUrl +
+      '?barcode=' +
+      encodeURIComponent(barcode) +
+      '&target=' +
+      encodeURIComponent(target || '');
   }
-
 }
 
 return;
