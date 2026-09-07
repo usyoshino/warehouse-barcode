@@ -252,8 +252,10 @@ async function scanBarcode() {
       ========================= */
 
 if (returnUrl) {
-  // GAS側へ読み取り結果を送る
+
+  // 元のGAS画面へ読み取り結果を送る
   if (window.opener && !window.opener.closed) {
+
     window.opener.postMessage(
       {
         barcode: barcode,
@@ -262,61 +264,53 @@ if (returnUrl) {
       'https://script.google.com'
     );
 
-    // 元の画面へ戻る
-    try {
-      window.opener.focus();
-    } catch (e) {}
-
-    // まず自動で閉じる
+    // 少し待ってからスキャナー画面を閉じる
     setTimeout(function () {
+
       window.close();
 
-      // window.close() が効かないスマホ等では
-      // 「元の画面に戻る」ボタンを表示
+      // 閉じられなかった場合の表示
       setTimeout(function () {
-        document.body.innerHTML = `
-          <div style="
-            text-align:center;
-            padding:40px 20px;
-            font-family:sans-serif;
-          ">
-            <h2 style="color:#333;">読み取り成功</h2>
 
-            <p style="font-size:18px;">
-              バーコードを元の画面へ入力しました。
-            </p>
-
-            <button
-              onclick="window.close();"
-              style="
-                width:90%;
-                max-width:350px;
-                padding:18px;
-                font-size:20px;
-                font-weight:bold;
-                border:none;
-                border-radius:10px;
-                background:#1976d2;
-                color:white;
-              "
-            >
-              元の画面に戻る
-            </button>
-
-            <p style="
-              margin-top:20px;
-              color:#777;
-              font-size:14px;
+        if (!window.closed) {
+          document.body.innerHTML = `
+            <div style="
+              text-align:center;
+              padding:40px 20px;
+              font-family:sans-serif;
             ">
-              ボタンを押しても閉じない場合は、<br>
-              ブラウザの「戻る」またはタブを閉じてください。
-            </p>
-          </div>
-        `;
+              <h2>読み取り成功</h2>
+
+              <p style="font-size:18px;">
+                ロケーションを入力しました
+              </p>
+
+              <button
+                onclick="window.close();"
+                style="
+                  width:90%;
+                  max-width:350px;
+                  padding:18px;
+                  font-size:20px;
+                  font-weight:bold;
+                  border:0;
+                  border-radius:10px;
+                  background:#1976d2;
+                  color:white;
+                "
+              >
+                元の画面に戻る
+              </button>
+            </div>
+          `;
+        }
+
       }, 500);
-    }, 300);
+
+    }, 1000);
 
   } else {
+
     // 元画面が取得できない場合
     window.location.href =
       returnUrl +
