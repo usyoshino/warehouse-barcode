@@ -2,409 +2,460 @@
 <html lang="ja">
 
 <head>
+  <meta charset="UTF-8">
 
-<meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1">
+  <title>バーコード読み取り</title>
 
-<title>バーコード読み取り</title>
+  <style>
 
-<style>
+    body {
+      margin: 0;
+      background: #000;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+    }
 
-body {
-  margin: 0;
-  background: #000;
-  color: #fff;
-  font-family: sans-serif;
-  text-align: center;
-}
+    h2 {
+      margin: 15px 0;
+    }
 
-h2 {
-  margin: 15px 0;
-}
+    #video {
+      width: 100%;
+      height: auto;
+      max-height: 70vh;
+      object-fit: cover;
+    }
 
-#video {
-  width: 100%;
-  height: auto;
-  max-height: 70vh;
-  object-fit: cover;
-}
+    #message {
+      padding: 15px;
+      font-size: 20px;
+    }
 
-#message {
-  padding: 15px;
-  font-size: 20px;
-}
+    #result {
+      padding: 15px;
+      font-size: 24px;
+      font-weight: bold;
+      background: #fff;
+      color: #000;
+      margin: 10px;
+      border-radius: 8px;
+    }
 
-#result {
-  padding: 15px;
-  font-size: 24px;
-  font-weight: bold;
-  background: #fff;
-  color: #000;
-  margin: 10px;
-  border-radius: 8px;
-}
+    button {
+      width: 90%;
+      padding: 15px;
+      margin: 8px;
+      font-size: 18px;
+      border-radius: 8px;
+      border: none;
+    }
 
-button {
-  width: 90%;
-  padding: 15px;
-  margin: 8px;
-  font-size: 18px;
-  border-radius: 8px;
-}
-
-</style>
+  </style>
 
 </head>
 
 <body>
 
-<h2>📷 バーコード読み取り</h2>
+  <h2>📷 バーコード読み取り</h2>
 
-<div id="message">
-カメラを起動しています…
-</div>
+  <div id="message">
+    カメラを起動しています…
+  </div>
 
-<video
-  id="video"
-  autoplay
-  playsinline>
-</video>
+  <video
+    id="video"
+    autoplay
+    playsinline>
+  </video>
 
-<div id="result">
-読み取り待機中
-</div>
+  <div id="result">
+    読み取り待機中
+  </div>
 
-<button onclick="startCamera()">
-📷 カメラを起動
-</button>
+  <button onclick="startCamera()">
+    📷 カメラを起動
+  </button>
 
-<button onclick="stopCamera()">
-✕ カメラ停止
-</button>
+  <button onclick="stopCamera()">
+    ✕ カメラ停止
+  </button>
 
 
-<script>
+  <script>
 
-var stream = null;
-var detector = null;
-var scanning = false;
+    var stream = null;
+    var detector = null;
+    var scanning = false;
 
 
-/* =========================
-   URLから情報を取得
-========================= */
+    /* =========================
+       URLから情報を取得
+    ========================= */
 
-var params =
-  new URLSearchParams(
-    window.location.search
-  );
+    var params =
+      new URLSearchParams(
+        window.location.search
+      );
 
-var returnUrl =
-  params.get('returnUrl');
+    var returnUrl =
+      params.get('returnUrl');
 
-var target =
-  params.get('target');
+    var target =
+      params.get('target');
 
 
-/* =========================
-   カメラ開始
-========================= */
+    /* =========================
+       カメラ開始
+    ========================= */
 
-async function startCamera() {
+    async function startCamera() {
 
-  if (scanning) {
-    return;
-  }
+      if (scanning) {
+        return;
+      }
 
-  var message =
-    document.getElementById('message');
+      var message =
+        document.getElementById('message');
 
-  var video =
-    document.getElementById('video');
+      var video =
+        document.getElementById('video');
 
-  message.innerText =
-    'カメラを起動しています…';
+      message.innerText =
+        'カメラを起動しています…';
 
 
-  /* BarcodeDetector確認 */
+      /* BarcodeDetector確認 */
 
-  if (!('BarcodeDetector' in window)) {
+      if (!('BarcodeDetector' in window)) {
 
-    message.innerText =
-      'このスマホのChromeは標準バーコード読み取りに対応していません。';
+        message.innerText =
+          'このスマホのChromeは標準バーコード読み取りに対応していません。';
 
-    alert(
-      'このスマホでは標準バーコード読み取り機能が利用できません。'
-    );
+        alert(
+          'このスマホでは標準バーコード読み取り機能が利用できません。'
+        );
 
-    return;
-  }
+        return;
+      }
 
 
-  try {
+      try {
 
-    detector =
-      new BarcodeDetector({
+        detector =
+          new BarcodeDetector({
 
-        formats: [
-          'ean_13',
-          'ean_8',
-          'code_128',
-          'code_39',
-          'itf'
-        ]
+            formats: [
+              'ean_13',
+              'ean_8',
+              'code_128',
+              'code_39',
+              'itf'
+            ]
 
-      });
+          });
 
 
-    /* カメラ起動 */
+        /* カメラ起動 */
 
-    stream =
-      await navigator.mediaDevices.getUserMedia({
+        stream =
+          await navigator.mediaDevices.getUserMedia({
 
-        video: {
-          facingMode: {
-            ideal: 'environment'
-          }
-        },
+            video: {
+              facingMode: {
+                ideal: 'environment'
+              }
+            },
 
-        audio: false
+            audio: false
 
-      });
+          });
 
 
-    video.srcObject = stream;
+        video.srcObject = stream;
 
-    await video.play();
+        await video.play();
 
-    scanning = true;
+        scanning = true;
 
-    message.innerText =
-      'バーコードをカメラに映してください';
+        message.innerText =
+          'バーコードをカメラに映してください';
 
-    scanBarcode();
-
-  }
-
-  catch (error) {
-
-    console.log(error);
-
-    message.innerText =
-      'カメラを起動できませんでした';
-
-    alert(
-      'カメラを起動できませんでした。\n\n' +
-      'エラー：' +
-      error.name
-    );
-
-  }
-
-}
-
-
-/* =========================
-   バーコード読み取り
-========================= */
-
-async function scanBarcode() {
-
-  if (!scanning) {
-    return;
-  }
-
-
-  var video =
-    document.getElementById('video');
-
-
-  try {
-
-    var codes =
-      await detector.detect(video);
-
-
-    if (codes.length > 0) {
-
-      var barcode =
-        codes[0].rawValue;
-
-
-      document.getElementById(
-        'result'
-      ).innerText = barcode;
-
-
-      document.getElementById(
-        'message'
-      ).innerText =
-        '✅ 読み取り成功';
-
-
-      stopCamera();
-
-
-      /* =========================
-         倉庫管理画面へ戻る
-      ========================= */
-
-if (returnUrl) {
-
-// 元のGAS画面へ読み取り結果を送る
-if (window.opener && !window.opener.closed) {
-
-  window.opener.postMessage(
-    {
-      barcode: barcode,
-      target: target
-    },
-    '*'
-  );
-
-  // 少し待ってからスキャナー画面を閉じる
-  setTimeout(function () {
-
-    window.close();
-
-    // 閉じられなかった場合の表示
-    setTimeout(function () {
-
-      if (!window.closed) {
-
-        document.body.innerHTML = `
-          <div style="
-            text-align:center;
-            padding:40px 20px;
-            font-family:sans-serif;
-          ">
-
-            <h2>読み取り成功</h2>
-
-            <p style="font-size:18px;">
-              ロケーションを入力しました
-            </p>
-
-            <button
-              onclick="window.close();"
-              style="
-                width:90%;
-                max-width:350px;
-                padding:18px;
-                font-size:20px;
-                font-weight:bold;
-                border:0;
-                border-radius:10px;
-                background:#1976d2;
-                color:white;
-              "
-            >
-              元の画面に戻る
-            </button>
-
-          </div>
-        `;
+        scanBarcode();
 
       }
 
-    }, 500);
+      catch (error) {
 
-  }, 1000);
+        console.log(error);
 
-} else {
+        message.innerText =
+          'カメラを起動できませんでした';
 
-  // 元画面が取得できない場合
-  window.location.href =
-    returnUrl +
-    '?barcode=' +
-    encodeURIComponent(barcode) +
-    '&target=' +
-    encodeURIComponent(target || '');
+        alert(
+          'カメラを起動できませんでした。\n\n' +
+          'エラー：' +
+          error.name
+        );
 
-}
-
-return;
+      }
 
     }
 
 
-  }
+    /* =========================
+       バーコード読み取り
+    ========================= */
 
-  catch (error) {
+    async function scanBarcode() {
 
-    console.log(error);
+      if (!scanning) {
+        return;
+      }
 
-  }
+
+      var video =
+        document.getElementById('video');
 
 
-  /* 200ms後に再チェック */
+      try {
 
-  if (scanning) {
+        var codes =
+          await detector.detect(video);
 
-    setTimeout(
-      scanBarcode,
-      200
+
+        if (codes.length > 0) {
+
+          var barcode =
+            codes[0].rawValue;
+
+
+          document.getElementById(
+            'result'
+          ).innerText = barcode;
+
+
+          document.getElementById(
+            'message'
+          ).innerText =
+            '✅ 読み取り成功';
+
+
+          stopCamera();
+
+
+          /* =========================
+             読み取り結果をGASへ送信
+          ========================= */
+
+          if (
+            window.opener &&
+            !window.opener.closed
+          ) {
+
+            /*
+              元のGAS画面へ送信
+            */
+
+            window.opener.postMessage(
+              {
+                barcode: barcode,
+                target: target
+              },
+              '*'
+            );
+
+
+            /*
+              元の画面を表示
+            */
+
+            try {
+              window.opener.focus();
+            }
+            catch (e) {
+              console.log(e);
+            }
+
+
+            /*
+              スキャナー画面を閉じる
+            */
+
+            setTimeout(function () {
+
+              window.close();
+
+            }, 500);
+
+
+            /*
+              スマホなどでwindow.close()
+              が効かない場合
+            */
+
+            setTimeout(function () {
+
+              if (!window.closed) {
+
+                document.body.innerHTML = `
+
+                  <div style="
+                    text-align:center;
+                    padding:40px 20px;
+                    font-family:sans-serif;
+                    color:#fff;
+                  ">
+
+                    <h2>
+                      ✅ 読み取り成功
+                    </h2>
+
+                    <p style="
+                      font-size:18px;
+                      line-height:1.6;
+                    ">
+                      ロケーションを入力しました。
+                    </p>
+
+                    <p style="
+                      font-size:15px;
+                    ">
+                      元の倉庫管理画面を表示してください。
+                    </p>
+
+                    <button
+                      onclick="window.close();"
+                      style="
+                        width:90%;
+                        max-width:350px;
+                        padding:18px;
+                        font-size:20px;
+                        font-weight:bold;
+                        border:0;
+                        border-radius:10px;
+                        background:#1976d2;
+                        color:white;
+                      "
+                    >
+                      元の画面に戻る
+                    </button>
+
+                  </div>
+
+                `;
+
+              }
+
+            }, 1200);
+
+
+            return;
+          }
+
+
+          /*
+            window.openerが取得できない場合の
+            予備処理
+          */
+
+          if (returnUrl) {
+
+            window.location.href =
+              returnUrl +
+              '?barcode=' +
+              encodeURIComponent(barcode) +
+              '&target=' +
+              encodeURIComponent(target || '');
+
+          }
+
+          return;
+
+        }
+
+      }
+
+      catch (error) {
+
+        console.log(error);
+
+      }
+
+
+      /*
+        200ms後に再チェック
+      */
+
+      if (scanning) {
+
+        setTimeout(
+          scanBarcode,
+          200
+        );
+
+      }
+
+    }
+
+
+    /* =========================
+       カメラ停止
+    ========================= */
+
+    function stopCamera() {
+
+      scanning = false;
+
+
+      if (stream) {
+
+        var tracks =
+          stream.getTracks();
+
+
+        for (
+          var i = 0;
+          i < tracks.length;
+          i++
+        ) {
+
+          tracks[i].stop();
+
+        }
+
+
+        stream = null;
+
+      }
+
+
+      var video =
+        document.getElementById('video');
+
+
+      video.srcObject = null;
+
+    }
+
+
+    /* =========================
+       自動起動
+    ========================= */
+
+    window.addEventListener(
+      'load',
+      function() {
+
+        startCamera();
+
+      }
     );
 
-  }
-
-}
-
-
-/* =========================
-   カメラ停止
-========================= */
-
-function stopCamera() {
-
-  scanning = false;
-
-
-  if (stream) {
-
-    var tracks =
-      stream.getTracks();
-
-
-    for (
-      var i = 0;
-      i < tracks.length;
-      i++
-    ) {
-
-      tracks[i].stop();
-
-    }
-
-
-    stream = null;
-
-  }
-
-
-  var video =
-    document.getElementById('video');
-
-
-  video.srcObject = null;
-
-}
-
-
-/* =========================
-   自動起動
-========================= */
-
-window.onload =
-  function() {
-
-    startCamera();
-
-  };
-
-</script>
+  </script>
 
 </body>
 
