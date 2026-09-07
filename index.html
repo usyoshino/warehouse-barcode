@@ -268,14 +268,12 @@ if (returnUrl) {
   if (window.opener && !window.opener.closed) {
 
     window.opener.postMessage(
-      {
-        barcode: barcode,
-        target: target
-      },
-      'https://script.google.com'
-    );
-
-    window.close();
+  {
+    barcode: barcode,
+    target: target
+  },
+  'https://script.google.com'
+);
 
   } else {
 
