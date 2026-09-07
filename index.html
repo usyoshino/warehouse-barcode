@@ -253,72 +253,76 @@ async function scanBarcode() {
 
 if (returnUrl) {
 
-  // 元のGAS画面へ読み取り結果を送る
-  if (window.opener && !window.opener.closed) {
+// 元のGAS画面へ読み取り結果を送る
+if (window.opener && !window.opener.closed) {
 
-    window.opener.postMessage(
-      {
-        barcode: barcode,
-        target: target
-      },
-      'https://script.google.com'
-    );
+  window.opener.postMessage(
+    {
+      barcode: barcode,
+      target: target
+    },
+    '*'
+  );
 
-    // 少し待ってからスキャナー画面を閉じる
+  // 少し待ってからスキャナー画面を閉じる
+  setTimeout(function () {
+
+    window.close();
+
+    // 閉じられなかった場合の表示
     setTimeout(function () {
 
-      window.close();
+      if (!window.closed) {
 
-      // 閉じられなかった場合の表示
-      setTimeout(function () {
+        document.body.innerHTML = `
+          <div style="
+            text-align:center;
+            padding:40px 20px;
+            font-family:sans-serif;
+          ">
 
-        if (!window.closed) {
-          document.body.innerHTML = `
-            <div style="
-              text-align:center;
-              padding:40px 20px;
-              font-family:sans-serif;
-            ">
-              <h2>読み取り成功</h2>
+            <h2>読み取り成功</h2>
 
-              <p style="font-size:18px;">
-                ロケーションを入力しました
-              </p>
+            <p style="font-size:18px;">
+              ロケーションを入力しました
+            </p>
 
-              <button
-                onclick="window.close();"
-                style="
-                  width:90%;
-                  max-width:350px;
-                  padding:18px;
-                  font-size:20px;
-                  font-weight:bold;
-                  border:0;
-                  border-radius:10px;
-                  background:#1976d2;
-                  color:white;
-                "
-              >
-                元の画面に戻る
-              </button>
-            </div>
-          `;
-        }
+            <button
+              onclick="window.close();"
+              style="
+                width:90%;
+                max-width:350px;
+                padding:18px;
+                font-size:20px;
+                font-weight:bold;
+                border:0;
+                border-radius:10px;
+                background:#1976d2;
+                color:white;
+              "
+            >
+              元の画面に戻る
+            </button>
 
-      }, 500);
+          </div>
+        `;
 
-    }, 1000);
+      }
 
-  } else {
+    }, 500);
 
-    // 元画面が取得できない場合
-    window.location.href =
-      returnUrl +
-      '?barcode=' +
-      encodeURIComponent(barcode) +
-      '&target=' +
-      encodeURIComponent(target || '');
-  }
+  }, 1000);
+
+} else {
+
+  // 元画面が取得できない場合
+  window.location.href =
+    returnUrl +
+    '?barcode=' +
+    encodeURIComponent(barcode) +
+    '&target=' +
+    encodeURIComponent(target || '');
+
 }
 
 return;
